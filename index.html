@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BankWise | Customer Analytics</title>
+<style>
+:root{--ink:#17233c;--muted:#65718a;--blue:#4263eb;--line:#e6eaf2;--bg:#f5f7fc}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--ink)}
+header{background:linear-gradient(120deg,#17233c,#354fc7);color:white;padding:30px max(22px,calc((100% - 1120px)/2))}
+.brand{font-weight:800;letter-spacing:.4px;font-size:20px}.hero{max-width:1120px;margin:25px auto 0}.hero h1{font-size:clamp(28px,4vw,42px);margin:8px 0}.hero p{color:#dce4ff;max-width:660px;line-height:1.6;margin-bottom:0}
+main{max-width:1120px;margin:26px auto;padding:0 18px 40px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}.metric,.card{background:white;border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 6px 20px #1b2b4d08}.metric small{color:var(--muted)}.metric strong{display:block;font-size:25px;margin-top:7px}.layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card h2{font-size:19px;margin:0 0 6px}.sub{color:var(--muted);font-size:13px;line-height:1.5;margin:0 0 18px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{font-size:12px;color:#59647b;font-weight:700;display:block;margin-bottom:6px}input,select{width:100%;border:1px solid #dce2ed;border-radius:9px;padding:11px;background:#fff;color:var(--ink);font:inherit;outline:none}input:focus,select:focus{border-color:var(--blue)}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:17px}button{border:0;border-radius:9px;background:var(--blue);color:white;padding:11px 15px;font-weight:700;cursor:pointer}button.secondary{background:#eef1ff;color:#344cc0}.result{display:none;margin-top:15px;border-radius:10px;padding:14px;background:#f0f4ff;line-height:1.6;font-size:14px;overflow-wrap:anywhere}.result.error{background:#fff0ef;color:#a22}.wide{grid-column:1/-1}.footer{text-align:center;color:var(--muted);font-size:12px;margin-top:24px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.metrics{grid-template-columns:1fr}.wide{grid-column:auto}.fields{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">✦ BankWise</div>
+  <div class="hero">
+    <div style="font-size:12px;font-weight:700;letter-spacing:1.5px;color:#bfcaff">CUSTOMER INTELLIGENCE</div>
+    <h1>Understand your customers.<br>Make smarter decisions.</h1>
+    <p>A simple machine learning dashboard to estimate account balance and identify customers who may leave the bank.</p>
+  </div>
+</header>
+<main>
+  <section class="metrics">
+    <div class="metric"><small>Customer records used</small><strong id="rows">10,000</strong></div>
+    <div class="metric"><small>Balance model R²</small><strong id="r2Score">Loading…</strong></div>
+    <div class="metric"><small>Logistic Regression accuracy</small><strong id="logAcc">Loading…</strong></div>
+    <div class="metric"><small>Decision Tree accuracy</small><strong id="treeAcc">Loading…</strong></div>
+  </section>
+  <div class="layout">
+    <section class="card">
+      <h2>01 · Balance Estimator</h2>
+      <p class="sub">Linear Regression · Estimate a customer's account balance from their profile.</p>
+      <form id="balanceForm">
+        <div class="fields" id="balanceFields"></div>
+        <div class="actions"><button type="submit">Estimate balance →</button><button class="secondary" type="reset">Reset</button></div>
+      </form>
+      <div class="result" id="balanceResult" aria-live="polite"></div>
+    </section>
+    <section class="card">
+      <h2>02 · Churn Predictor</h2>
+      <p class="sub">Logistic Regression · Estimate whether a customer may leave the bank.</p>
+      <form id="logisticForm">
+        <div class="fields" id="logisticFields"></div>
+        <div class="actions"><button type="submit">Predict churn →</button><button class="secondary" type="reset">Reset</button></div>
+      </form>
+      <div class="result" id="logisticResult" aria-live="polite"></div>
+    </section>
+    <section class="card wide">
+      <h2>03 · Explainable Churn Check</h2>
+      <p class="sub">Decision Tree · A second churn model that learns decision rules from customer characteristics. Compare its result with Logistic Regression.</p>
+      <form id="treeForm">
+        <div class="fields" id="treeFields"></div>
+        <div class="actions"><button type="submit">Run decision tree →</button></div>
+      </form>
+      <div class="result" id="treeResult" aria-live="polite"></div>
+    </section>
+  </div>
+  <div class="footer">Student machine learning project · FastAPI + scikit-learn · Predictions are estimates, not guarantees.</div>
+</main>
+<script>
+const fields = [
+ ["CreditScore","Credit score","number",650,300,900],
+ ["Geography","Country","select","France"],
+ ["Gender","Gender","select","Female"],
+ ["Age","Age","number",35,18,100],
+ ["Tenure","Years with bank","number",5,0,10],
+ ["NumOfProducts","Bank products","number",2,1,4],
+ ["HasCrCard","Has credit card?","select","1"],
+ ["IsActiveMember","Active member?","select","1"],
+ ["EstimatedSalary","Estimated salary","number",75000,0,250000]
+];
+function makeFields(id){
+ document.getElementById(id).innerHTML=fields.map(([name,label,type,def,min,max])=>{
+  let control;
+  if(name==="Geography") control=`<select name="${name}"><option>France</option><option>Spain</option><option>Germany</option></select>`;
+  else if(name==="Gender") control=`<select name="${name}"><option>Female</option><option>Male</option></select>`;
+  else if(name==="HasCrCard"||name==="IsActiveMember") control=`<select name="${name}"><option value="1">Yes</option><option value="0">No</option></select>`;
+  else control=`<input name="${name}" type="number" value="${def}" min="${min}" max="${max}" step="${name==="EstimatedSalary"?"0.01":"1"}" required>`;
+  return `<div><label>${label}</label>${control}</div>`;
+ }).join("");
+}
+["balanceFields","logisticFields","treeFields"].forEach(makeFields);
+function readForm(form){
+ const data=Object.fromEntries(new FormData(form).entries());
+ ["CreditScore","Age","Tenure","NumOfProducts","HasCrCard","IsActiveMember"].forEach(k=>data[k]=Number(data[k]));
+ data.EstimatedSalary=Number(data.EstimatedSalary);
+ return data;
+}
+async function runPrediction(formId,url,resultId,kind){
+ const out=document.getElementById(resultId);out.style.display="block";out.className="result";out.textContent="Calculating…";
+ try{
+  const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(readForm(document.getElementById(formId)))});
+  const data=await response.json();if(!response.ok)throw new Error(data.detail||"Prediction failed");
+  if(kind==="balance")out.innerHTML=`<b>Estimated account balance</b><br><span style="font-size:25px;font-weight:800"> ${Number(data.predicted_balance).toLocaleString(undefined,{style:"currency",currency:"USD",maximumFractionDigits:0})}</span><br>Model: Linear Regression`;
+  else {
+   const rules = data.decision_rules ? `<br><br><b>Decision path for this customer</b><br>${data.decision_rules.map(x=>"• "+x).join("<br>")}` : "";
+   out.innerHTML=`<b>${data.prediction}</b><br>Estimated churn probability: <b>${data.churn_probability}%</b><br>${data.business_tip}${rules}<br><br><span style="color:#65718a">Model: ${data.model}</span>`;
+  }
+ }catch(err){out.className="result error";out.textContent="Could not get prediction: "+err.message+". Make sure the FastAPI server is running."}
+}
+document.getElementById("balanceForm").addEventListener("submit",e=>{e.preventDefault();runPrediction("balanceForm","/predict/regression","balanceResult","balance")});
+document.getElementById("logisticForm").addEventListener("submit",e=>{e.preventDefault();runPrediction("logisticForm","/predict/classification","logisticResult","churn")});
+document.getElementById("treeForm").addEventListener("submit",e=>{e.preventDefault();runPrediction("treeForm","/predict/tree","treeResult","churn")});
+document.querySelectorAll("form").forEach(f=>f.addEventListener("reset",()=>{const result=f.parentElement.querySelector(".result");if(result){result.style.display="none";result.textContent=""}}));
+fetch("/api/metrics").then(r=>r.json()).then(m=>{
+ document.getElementById("rows").textContent=Number(m.dataset_rows).toLocaleString();
+ document.getElementById("r2Score").textContent=Number(m.regression.r2_score).toFixed(3);
+ document.getElementById("logAcc").textContent=(m.logistic_regression.accuracy*100).toFixed(1)+"%";
+ document.getElementById("treeAcc").textContent=(m.decision_tree.accuracy*100).toFixed(1)+"%";
+}).catch(()=>{document.getElementById("logAcc").textContent="—";document.getElementById("treeAcc").textContent="—"});
+</script>
+</body>
+</html>

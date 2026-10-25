@@ -1,0 +1,14 @@
+{
+  "regression": {
+    "r2_score": 0.2464,
+    "mae": 46635.18
+  },
+  "logistic_regression": {
+    "accuracy": 0.711
+  },
+  "decision_tree": {
+    "accuracy": 0.802
+  },
+  "dataset_rows": 10000,
+  "note": "Metrics are calculated on a held-out 20% test set. Results can vary if the dataset or training settings change."
+}
